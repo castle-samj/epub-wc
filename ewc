@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# takes an epub file and determines the number of words in it
+
+echo "starting.."
+echo "args: $@"
+echo "done"
+
+exit 0
