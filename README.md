@@ -1,7 +1,7 @@
 # ewc - epub-wordcount  
 Written May 2026 by Sam Castle  
 ### CURRENT VERSION  
-0.1.0
+0.2.0
 
 ### PURPOSE  
 determines the number of words in an epub file
