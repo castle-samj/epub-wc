@@ -1,9 +1,82 @@
 #!/usr/bin/env bash
 
-# takes an epub file and determines the number of words in it
+###############################################################################
+##                                                                           ##
+##                #########  ##           ##   #########                     ##
+##                ##         ##           ##  ##       ##                    ##
+##                ##         ##           ##  ##                             ##
+##                #######    ##           ##  ##                             ##
+##                ##          ##   ###   ##   ##                             ##
+##                ##           ## ## ## ##    ##       ##                    ##
+##                #########     ###   ###      #########                     ##
+##                                                                           ##
+##                        ewc - epub word count                              ##
+##                    Written May 2026 by Sam Castle                         ##
+##                                                                           ##
+### PURPOSE ###################################################################
+# determines the number of words in an epub file
+#
+### USAGE ##################################################################### 
+# ewc <flags> <file.epub>
+#
+### VERSION ###################################################################
+CURRENT_VERSION="0.1"
+#
+### VARIABLES #################################################################
+EXIT_CODE=0 
+#
+### FUNCTIONS #################################################################
 
-echo "starting.."
+get_version() {
+  echo "ewc ver. $CURRENT_VERSION"
+}
+
+logo() {
+  echo
+  echo "          #####  #     #   #####"
+  echo "          #      #     #  #     #"
+  echo "          ####   #  #  #  #"
+  echo "          #      # # # #  #     #"
+  echo "          #####   #   #    #####"
+}
+
+### FLAGS ##################################################################### 
+## TTY check - This may be removed later to allow piping
+if [[ ! -t 1 ]]; then
+  echo "Error: ewc must run directly in terminal." >&2
+  EXIT_CODE=2
+  exit $EXIT_CODE
+fi
+
+## Version flag
+if [[ "$1" == "-v" || "$1" == "--version" ]]; then
+  get_version
+  exit $EXIT_CODE
+fi 
+
+## Help flag
+if [[ "$1" == "-h" || "$1" == "--help" || $# == 0 ]]; then
+  logo
+  echo "Usage: ewc <flags> <file.epub>"
+  echo "Purpose: determines the number of words in an epub file"
+  echo "Flags:"
+  echo "  -v, --version   Show version information"
+  echo "  -h, --help      Show this help message"
+  exit $EXIT_CODE
+fi  
+
+# TODO add flag for multiple file support
+
+### ARGS ######################################################################
+# TODO check for file existence and type
+
+
+### LOGIC #####################################################################
+# Welcome message
+logo
+
 echo "args: $@"
 echo "done"
 
-exit 0
+
+exit $EXIT_CODE
