@@ -1,4 +1,4 @@
-# ewc - epub word count  
+# ewc - epub-wordcount  
 Written May 2026 by Sam Castle  
 ### CURRENT VERSION  
 0.1.0
@@ -12,3 +12,13 @@ determines the number of words in an epub file
 
 ### USAGE  
 `ewc <flags> <file>`
+
+
+### Map  
+ - add support for epub container
+ - proof-of-concept including external binaries
+ - xhtml parser
+ - optimize for shell built-ins 
+ - optimize for memory/storage space 
+ - add support for multiple (batch) file
+ - interactive mode (tui?)

@@ -13,35 +13,40 @@
 ##                        ewc - epub word count                              ##
 ##                    Written May 2026 by Sam Castle                         ##
 ##                                                                           ##
+### VERSION ###################################################################
+CURRENT_VERSION="0.2"
+#
 ### PURPOSE ###################################################################
 # determines the number of words in an epub file
 #
 ### USAGE ##################################################################### 
 # ewc <flags> <file.epub>
 #
-### VERSION ###################################################################
-CURRENT_VERSION="0.1"
-#
 ### VARIABLES #################################################################
 EXIT_CODE=0 
-#
+
+
 ### FUNCTIONS #################################################################
 
 get_version() {
   echo "ewc ver. $CURRENT_VERSION"
 }
 
-logo() {
-  echo
-  echo "          #####  #     #   #####"
-  echo "          #      #     #  #     #"
-  echo "          ####   #  #  #  #"
-  echo "          #      # # # #  #     #"
-  echo "          #####   #   #    #####"
+check_args() {
+for arg in "$@"; do 
+  if [[ -f "$1" && $(file --mime-type "$1") == *"epub"* ]]; then
+    FILE="$arg"
+  else
+    echo "Error: File not found or invalid file type." >&2
+    EXIT_CODE=3
+    exit $EXIT_CODE
+  fi
+done
 }
 
+
 ### FLAGS ##################################################################### 
-## TTY check - This may be removed later to allow piping
+## TTY check # TODO This may be removed later to allow piping
 if [[ ! -t 1 ]]; then
   echo "Error: ewc must run directly in terminal." >&2
   EXIT_CODE=2
@@ -56,7 +61,6 @@ fi
 
 ## Help flag
 if [[ "$1" == "-h" || "$1" == "--help" || $# == 0 ]]; then
-  logo
   echo "Usage: ewc <flags> <file.epub>"
   echo "Purpose: determines the number of words in an epub file"
   echo "Flags:"
@@ -65,18 +69,17 @@ if [[ "$1" == "-h" || "$1" == "--help" || $# == 0 ]]; then
   exit $EXIT_CODE
 fi  
 
+# TODO add flag for read in from file list or stdin
 # TODO add flag for multiple file support
 
+
 ### ARGS ######################################################################
-# TODO check for file existence and type
+
+check_args "$@"
+echo "Working file: $FILE" # TODO remove this debug line
 
 
 ### LOGIC #####################################################################
 # Welcome message
-logo
-
-echo "args: $@"
-echo "done"
-
 
 exit $EXIT_CODE
