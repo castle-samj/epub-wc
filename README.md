@@ -15,7 +15,7 @@ determines the number of words in an epub file
 
 
 ### Map  
- - [&check;] add support for epub container
+ - [x] add support for epub container
  - [ ] proof-of-concept including external binaries
  - [ ] add support for multiple (batch) file
  - [ ] optimize for shell built-ins 
