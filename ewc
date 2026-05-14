@@ -44,6 +44,19 @@ for arg in "$@"; do
 done
 }
 
+count_words() {
+  mkdir ~/.temp
+  
+  # quietly unzip only the .xhtml files to a temp directory
+  unzip -jq "$1" "*.xhtml" -d ~/.temp
+  
+  # TODO for each .xhtml file, parse out the text content and count the words
+  wc -w ~/.temp/* | tail -n 1 | awk '{print "Approximate word count: " $1}'
+  
+  # cleanup 
+  rm -rf ~/.temp
+}
+
 
 ### FLAGS ##################################################################### 
 ## TTY check # TODO This may be removed later to allow piping
@@ -64,8 +77,8 @@ if [[ "$1" == "-h" || "$1" == "--help" || $# == 0 ]]; then
   echo "Usage: ewc <flags> <file.epub>"
   echo "Purpose: determines the number of words in an epub file"
   echo "Flags:"
-  echo "  -v, --version   Show version information"
-  echo "  -h, --help      Show this help message"
+  echo "  -v, --version   Show version information and exit"
+  echo "  -h, --help      Show this help message and exit"
   exit $EXIT_CODE
 fi  
 
@@ -80,14 +93,11 @@ echo "Working file: $FILE" # TODO remove this debug line
 
 
 ### LOGIC #####################################################################
-# Welcome message
-FILE_NAME=$(basename "$FILE")
-mkdir ~/.temp
+main() {
+  # FILE_NAME=$(basename "$FILE") 
+  # Welcome message
+  count_words "$FILE"
+  exit $EXIT_CODE
+}
 
-echo "Creating temp files.."
-unzip -jq "$FILE" "*.xhtml" -d ~/.temp
-wc -w ~/.temp/* | tail -n 1 | awk '{print "Total word count: " $1}'
-echo "Removing temp files.."
-rm -rf ~/.temp
-
-exit $EXIT_CODE
+main $@
