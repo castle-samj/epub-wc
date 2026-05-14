@@ -28,11 +28,11 @@ EXIT_CODE=0
 
 ### FUNCTIONS #################################################################
 
-get_version() {
-  echo "ewc ver. $CURRENT_VERSION"
+get_version() { 
+  echo " + ewc ver. $CURRENT_VERSION" 
 }
 
-check_args() {
+check_file() {
 for arg in "$@"; do 
   if [[ -f "$1" && $(file --mime-type "$1") == *"epub"* ]]; then
     FILE="$arg"
@@ -88,7 +88,7 @@ fi
 
 ### ARGS ######################################################################
 
-check_args "$@"
+check_file "$@"
 echo "Working file: $FILE" # TODO remove this debug line
 
 
