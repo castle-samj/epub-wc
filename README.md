@@ -15,10 +15,10 @@ determines the number of words in an epub file
 
 
 ### Map  
- - add support for epub container
- - proof-of-concept including external binaries
- - xhtml parser
- - optimize for shell built-ins 
- - optimize for memory/storage space 
- - add support for multiple (batch) file
- - interactive mode (tui?)
+ - [&check;] add support for epub container
+ - [ ] proof-of-concept including external binaries
+ - [ ] add support for multiple (batch) file
+ - [ ] optimize for shell built-ins 
+ - [ ] optimize for memory/storage space 
+ - [ ] interactive mode (tui?)
+ - [ ] xhtml parser (lol)

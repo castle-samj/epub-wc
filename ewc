@@ -81,5 +81,13 @@ echo "Working file: $FILE" # TODO remove this debug line
 
 ### LOGIC #####################################################################
 # Welcome message
+FILE_NAME=$(basename "$FILE")
+mkdir ~/.temp
+
+echo "Creating temp files.."
+unzip -jq "$FILE" "*.xhtml" -x "*cover*" -d ~/.temp
+wc -w ~/.temp/* | tail -n 1 | awk '{print "Total word count: " $1}'
+echo "Removing temp files.."
+rm -rf ~/.temp
 
 exit $EXIT_CODE
