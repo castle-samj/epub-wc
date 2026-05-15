@@ -13,8 +13,9 @@
 ##                        ewc - epub word count                              ##
 ##                    Written May 2026 by Sam Castle                         ##
 ##                                                                           ##
-### VERSION ###################################################################
+### VARIABLES #################################################################
 CURRENT_VERSION="0.2"
+EXIT_CODE=0 
 #
 ### PURPOSE ###################################################################
 # determines the number of words in an epub file
@@ -22,18 +23,33 @@ CURRENT_VERSION="0.2"
 ### USAGE ##################################################################### 
 # ewc <flags> <file.epub>
 #
-### VARIABLES #################################################################
-EXIT_CODE=0 
-
-
 ### FUNCTIONS #################################################################
 
-get_version() { 
-  echo " + ewc ver. $CURRENT_VERSION" 
+get_version() {
+  echo "ewc ver. $CURRENT_VERSION"
 }
 
+help_message() {
+  get_version
+  echo "  Usage: ewc <flags> <file.epub>"
+  echo "  Purpose: determines the number of words in an epub file"
+  echo 
+  echo "    -v,       Show version information and exit"
+  echo "    -h,       Show this help message and exit"
+  echo "  Future supported flags:"
+  echo "    -b,       Enable batch mode (allow multiple files)"
+  echo "    -t,       Disable TTY check (allow piping)"
+  exit $EXIT_CODE
+}
+
+# TODO add multiple file support
+batch_mode() {
+  echo "Batch mode support coming soon."
+}
+
+
 check_file() {
-for arg in "$@"; do 
+for arg in "$@"; do  # TODO feed this with only the files, not the flags
   if [[ -f "$1" && $(file --mime-type "$1") == *"epub"* ]]; then
     FILE="$arg"
   else
@@ -58,45 +74,49 @@ count_words() {
 }
 
 
-### FLAGS ##################################################################### 
-## TTY check # TODO This may be removed later to allow piping
-if [[ ! -t 1 ]]; then
-  echo "Error: ewc must run directly in terminal." >&2
-  EXIT_CODE=2
-  exit $EXIT_CODE
-fi
-
-## Version flag
-if [[ "$1" == "-v" || "$1" == "--version" ]]; then
-  get_version
-  exit $EXIT_CODE
-fi 
-
-## Help flag
-if [[ "$1" == "-h" || "$1" == "--help" || $# == 0 ]]; then
-  echo "Usage: ewc <flags> <file.epub>"
-  echo "Purpose: determines the number of words in an epub file"
-  echo "Flags:"
-  echo "  -v, --version   Show version information and exit"
-  echo "  -h, --help      Show this help message and exit"
-  exit $EXIT_CODE
-fi  
-
-# TODO add flag for read in from file list or stdin
-# TODO add flag for multiple file support
-
-
-### ARGS ######################################################################
-
-check_file "$@"
-echo "Working file: $FILE" # TODO remove this debug line
-
-
 ### LOGIC #####################################################################
 main() {
+
+  ### ARGS AND FLAGS ###
+  [[ $# == 0 ]] && help_message  # catch no arguments and show help message
+  
+  #set local variables
+  local t_flag=1  # disables TTY block
+  local v_flag=0  # version flag
+  local h_flag=0  # help flag
+  local b_flag=0  # batch mode flag
+
+  while getopts ":tbhv" opt; do
+    case $opt in
+      t)  t_flag=0 ;;
+      b)  b_flag=1 ;;
+      h)  h_flag=1 ;;
+      v)  v_flag=1 ;;
+      ?)  echo "Invalid option: -$OPTARG" >&2 ;;
+    esac
+  done
+
+  [[ $h_flag -eq 1 ]] && help_message && exit $EXIT_CODE
+  [[ $v_flag -eq 1 ]] && get_version && exit $EXIT_CODE
+  [[ $b_flag -eq 1 ]] && batch_mode
+
+  # TODO correct this to allow piping
+  if [[ ! -t 1 ]]; then
+    if [[ $t_flag -eq 0 ]]; then
+      echo "TTY check disabled" >&2
+    else
+      echo "Error: ewc must run directly in terminal." >&2
+      EXIT_CODE=2
+      exit $EXIT_CODE
+    fi
+  fi
+
+
+  ### MAIN LOGIC ###
+  # check_file "$@"
   # FILE_NAME=$(basename "$FILE") 
   # Welcome message
-  count_words "$FILE"
+  # count_words "$FILE"
   exit $EXIT_CODE
 }
 
