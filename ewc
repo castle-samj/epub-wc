@@ -26,20 +26,29 @@ EXIT_CODE=0
 ### FUNCTIONS #################################################################
 
 get_version() {
-  echo "ewc ver. $CURRENT_VERSION"
+  echo "ewc (epub word count) version $CURRENT_VERSION"
 }
 
 help_message() {
-  get_version
-  echo "  Usage: ewc <flags> <file.epub>"
-  echo "  Purpose: determines the number of words in an epub file"
-  echo 
-  echo "    -v,       Show version information and exit"
-  echo "    -h,       Show this help message and exit"
-  echo "  Future supported flags:"
-  echo "    -b,       Enable batch mode (allow multiple files)"
-  echo "    -t,       Disable TTY check (allow piping)"
+  echo "
+Usage: ewc <flags> <file.epub>  
+Purpose: determines the number of words in an epub file
+  -v,       Show version information and exit
+  -h,       Show this help message and exit
+Future supported flags:
+  -b,       Enable batch mode (allow multiple files)
+  -t,       Disable TTY check (allow piping)"
   exit $EXIT_CODE
+}
+
+enable_tty_check() {
+   if [[ $flag_t -eq 1 ]]; then
+      echo "TTY enabled." >&2
+    else
+      echo "Error: TTY disabled." >&2
+      EXIT_CODE=2
+      exit $EXIT_CODE
+    fi
 }
 
 # TODO add multiple file support
@@ -47,13 +56,12 @@ batch_mode() {
   echo "Batch mode support coming soon."
 }
 
-
 check_file() {
 for arg in "$@"; do  # TODO feed this with only the files, not the flags
-  if [[ -f "$1" && $(file --mime-type "$1") == *"epub"* ]]; then
+  if [[ -f "$arg" && $(file --mime-type "$arg") == *"epub"* ]]; then
     FILE="$arg"
   else
-    echo "Error: File not found or invalid file type." >&2
+    echo "Error: File $arg not found or invalid file type." >&2
     EXIT_CODE=3
     exit $EXIT_CODE
   fi
@@ -75,45 +83,39 @@ count_words() {
 
 
 ### LOGIC #####################################################################
+
 main() {
 
   ### ARGS AND FLAGS ###
-  [[ $# == 0 ]] && help_message  # catch no arguments and show help message
-  
-  #set local variables
-  local t_flag=1  # disables TTY block
-  local v_flag=0  # version flag
-  local h_flag=0  # help flag
-  local b_flag=0  # batch mode flag
 
-  while getopts ":tbhv" opt; do
+  #set local variables
+  local flag_t=0  # flag - TTY 
+  local flag_v=0  # flag - version 
+  local flag_h=0  # flag - help
+  local flag_b=0  # flag - batch mode
+  local POSITIONAL_ARGS=()  # array to hold non-flag arguments (file names)
+  
+
+  [[ $# == 0 ]] && flag_h=1  # catch no arguments and show help message
+  # TODO rewrite as "for arg in $@; do", shift, and new array for file names
+  # TODO add support for long flags
+  while getopts ":tbhv" opt; do  
     case $opt in
-      t)  t_flag=0 ;;
-      b)  b_flag=1 ;;
-      h)  h_flag=1 ;;
-      v)  v_flag=1 ;;
+      t)  flag_t=1 ;;
+      b)  flag_b=1 ;;
+      h)  flag_h=1 ;;
+      v)  flag_v=1 ;;
       ?)  echo "Invalid option: -$OPTARG" >&2 ;;
     esac
   done
 
-  [[ $h_flag -eq 1 ]] && help_message && exit $EXIT_CODE
-  [[ $v_flag -eq 1 ]] && get_version && exit $EXIT_CODE
-  [[ $b_flag -eq 1 ]] && batch_mode
-
-  # TODO correct this to allow piping
-  if [[ ! -t 1 ]]; then
-    if [[ $t_flag -eq 0 ]]; then
-      echo "TTY check disabled" >&2
-    else
-      echo "Error: ewc must run directly in terminal." >&2
-      EXIT_CODE=2
-      exit $EXIT_CODE
-    fi
-  fi
-
+  [[ $flag_h -eq 1 ]] && help_message && exit $EXIT_CODE
+  [[ $flag_v -eq 1 ]] && get_version && exit $EXIT_CODE
+  [[ $flag_b -eq 1 ]] && batch_mode
+  [[ ! -t 1 ]] && enable_tty_check
 
   ### MAIN LOGIC ###
-  # check_file "$@"
+  check_file "$@"
   # FILE_NAME=$(basename "$FILE") 
   # Welcome message
   # count_words "$FILE"
