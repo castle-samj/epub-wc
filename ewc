@@ -16,76 +16,107 @@
 ### VARIABLES #################################################################
 CURRENT_VERSION="0.2"
 EXIT_CODE=0 
+ewc_flag_b=(false "batch")  	# flag - batch mode
+ewc_flag_f=(false "file")		# flag - read from file
+ewc_flag_h=(false "help")		# flag - help
+# TODO add 'quiet' flag to disable fatal except errors and final word count
+ewc_flag_t=(false "tty")		# flag - TTY check
+ewc_flag_v=(false "version")	# flag - version
+ewc_flag_V=(false "Verbose")	# flag - verbose mode
+parsed_file=""
 #
 ### PURPOSE ###################################################################
 # determines the number of words in an epub file
 #
 ### USAGE ##################################################################### 
-# ewc <flags> <file.epub>
+# ewc [-flag] [--flag] [file]
 #
+### EXIT CODES ################################################################
+# 0 - success
+# 1 - invalid flag
+# 2 - TTY check failed (piping not allowed)
+# 3 - file not found or invalid file type
 ### FUNCTIONS #################################################################
 
+	### FLAG FUNCTIONS ###
 get_version() {
   echo "ewc (epub word count) version $CURRENT_VERSION"
-}
-
-help_message() {
-  echo "
-Usage: ewc <-vhbfVt> <file>  
-Purpose: determines the number of words in an epub file
-  -v, --version		Show version information and exit
-  -h, --help		Show this help message and exit
-Future supported flags:
-  -b, --batch		Enable batch mode (allow multiple files)
-  -f, --file		Read file names from a text file (one file per line)
-  -V, --verbose		Enable verbose output (show processing details)
-  -t, --tty			Disable TTY check (allow piping)"
   exit $EXIT_CODE
 }
 
+help_message() {
+	echo "Purpose:  determines the number of words in an epub file"
+	echo "Usage:  ewc [-bfhtvV] [file]"
+	echo "  -b, --batch  ** Enable batch mode (allow multiple files)"
+	echo "  -f, --file  ** Read file names from a text file (one file per line)"
+	echo "  -h, --help  Show this help message and exit"
+	echo "  -t, --tty  Disable TTY check (allow piping)"
+	echo "  -v, --version  Show version information and exit"
+	echo "  -V, --verbose  Enable verbose output (show extra processing details)"
+	echo "  (** denotes unsupported/future flags)"
+	exit $EXIT_CODE
+}
+
+verbose_output() {
+  [[ $ewc_flag_V == true ]] 
+}
+
 enable_tty_check() {
-  if [[ $flag_t -eq 1 ]]; then
-    echo "+TTY enabled."
+  if [[ $ewc_flag_t == true ]]; then
+	verbose_output && echo "+TTY enabled."
   else
-    echo "Error: TTY disabled." >&2
-    EXIT_CODE=2
-    exit $EXIT_CODE
+	echo "Error: TTY disabled." >&2
+	EXIT_CODE=2
+	exit $EXIT_CODE
   fi
 }
 
 file_mode() {
-  echo "File mode support coming soon."
+	echo "File mode support coming soon."
+	# TODO add file mode support
 }
 
-# TODO add multiple file support
 batch_mode() {
-  echo "Batch mode support coming soon."
+	echo "Batch mode support coming soon."
+	# TODO add multiple file support
 }
 
+	### HELPER FUNCTIONS ###
 check_file() {
-  for arg in "$@"; do  
-    if [[ -f "$arg" && "$(file --mime-type "$arg")" == *"epub"* ]]; then
-      echo $"FILE = $arg"
-      FILE="$arg"
-    else
-      echo "Error: File $arg not found or invalid file type." >&2
-      EXIT_CODE=3
-      exit $EXIT_CODE
-    fi
-  done
+	local FILE=""
+	# determine if the argument is a valid file and of the correct type (epub)
+	for arg in "$@"; do  
+		if [[ -f "$arg" && "$(file --mime-type "$arg")" == *"epub"* ]]; then
+			verbose_output && echo "File $arg is valid."
+			FILE="$arg"
+		else
+			echo "Error: File $arg not found or invalid file type." >&2
+			EXIT_CODE=3
+			exit $EXIT_CODE
+		fi
+
+		# parse FILE
+		parsed_file=$(parse_xml "$FILE")
+		count_words "$parsed_file"
+	done
+}
+
+parse_xml() {
+	# TODO parse the .xhtml files to extract text content for word counting
+	echo $1
 }
 
 count_words() {
-  mkdir ~/.temp
-  
-  # quietly unzip only the .xhtml files to a temp directory
-  unzip -jq "$1" "*.xhtml" -d ~/.temp
-  
-  # TODO for each .xhtml file, parse out the text content and count the words
-  wc -w ~/.temp/* | tail -n 1 | awk '{print "Approximate word count: " $1}'
-  
-  # cleanup 
-  rm -rf ~/.temp
+	mkdir ~/.temp
+
+	# quietly unzip only the .xhtml files to a temp directory
+	unzip -jq "$1" "*.xhtml" -d ~/.temp
+
+	# TODO for each .xhtml file, parse out the text content and count the words
+	wc -w ~/.temp/* | tail -n 1 | awk '{print "Approximate word count: " $1}'
+
+	# cleanup 
+	rm -rf ~/.temp
 }
 
 
@@ -95,46 +126,65 @@ main() {
 
 	### ARGS AND FLAGS ###
 
-	#set local variables
-	local flag_t=0  # flag - TTY 
-	local flag_v=0  # flag - version 
-	local flag_h=0  # flag - help
-	local flag_b=0  # flag - batch mode
-	local flag_f=0  # flag - read from file
-	local flag_V=0  # flag - verbose mode
-	local POSITIONAL_ARGS=()  # array to hold non-flag arguments (file names)
+	local POSITIONAL_ARGS=()  	# array to hold non-flag arguments (file names)
+	local SET_FLAGS=()			# array to hold the names of flags that are set
 
+	[[ $# == 0 ]] && ewc_flag_h=true  # catch no arguments and show help message
 
-	#[[ $# == 0 ]] && flag_h=1  # catch no arguments and show help message
-
-	# TODO add support for long flags
 	for arg in $@; do
 		case $arg in 
-    		-t|--tty)  		flag_t=1 ;;
-    		-b|--batch)  	flag_b=1 ;;
-    		-h|--help)  	flag_h=1 ;;
-    		-v|--version)	flag_v=1 ;;
-			-f|--file)		flag_f=1 ;;
-			-V|--verbose)	flag_V=1 ;;
-    		*)  			POSITIONAL_ARGS+=("$arg") ;;
-    	esac
-    done
+			-b|--batch) 
+				ewc_flag_b=true 
+				;;
+			-f|--file) 
+				ewc_flag_f=true 
+				;;
+			-h|--help) 
+				ewc_flag_h=true 
+				;;
+			-t|--tty) 
+				ewc_flag_t=true 
+				;;
+			-v|--version) 
+				ewc_flag_v=true 
+				;;
+			-V|--Verbose) 
+				ewc_flag_V=true 
+				;;
+			-*) 
+				echo "Error: Invalid flag $arg" >&2 
+				EXIT_CODE=1 
+				exit $EXIT_CODE 
+				;;
+			*) 
+				POSITIONAL_ARGS+=("$arg") 
+				;;
+		esac
+	done
 
-  [[ $flag_h -eq 1 ]] && help_message 
-  [[ $flag_v -eq 1 ]] && get_version && exit $EXIT_CODE
-  [[ $flag_t -eq 1 ]] && enable_tty_check
-  [[ $flag_f -eq 1 ]] && file_mode
-  [[ $flag_b -eq 1 ]] && batch_mode
-  [[ ! -t 1 ]] && enable_tty_check
+	for opt in $(echo ${!ewc_flag_*}); do
+		local -n arr_ref=$opt
+    	truthy=${arr_ref[0]}
+    	namer=${arr_ref[1]}
+		[[ ${truthy} == true ]] && SET_FLAGS+=(${namer})
+	done
 
+	verbose_output && echo "Flags set: ${SET_FLAGS[@]}"
+	verbose_output && echo "Positional arguments: ${POSITIONAL_ARGS[@]}"
+	
+	[[ $ewc_flag_b == true ]] && batch_mode
+	[[ $ewc_flag_f == true ]] && file_mode
+	[[ $ewc_flag_h == true ]] && help_message 
+	[[ $ewc_flag_v == true ]] && get_version
+	[[ ! -t 1 ]] && enable_tty_check	
+	
 
-  echo ${POSITIONAL_ARGS[@]}
-  ### MAIN LOGIC ###
-  check_file ${POSITIONAL_ARGS[@]}
-  # FILE_NAME=$(basename "$FILE") 
-  # Welcome message
-  # count_words "$FILE"
-  exit $EXIT_CODE
+	### MAIN LOGIC ###
+	check_file ${POSITIONAL_ARGS[@]}
+	# FILE_NAME=$(basename "$FILE") 
+	# Welcome message
+	# count_words "$FILE"
+	exit $EXIT_CODE
 }
 
 main $@
