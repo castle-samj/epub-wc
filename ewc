@@ -17,6 +17,7 @@
 CURRENT_VERSION="0.2"
 EXIT_CODE=0 
 ewc_flag_b=(false "batch")  	# flag - batch mode
+ewc_flag_d=(false "debug")		# flag - debug mode (show extra debug info)
 ewc_flag_f=(false "file")		# flag - read from file
 ewc_flag_h=(false "help")		# flag - help
 # TODO add 'quiet' flag to disable fatal except errors and final word count
@@ -29,7 +30,7 @@ parsed_file=""
 # determines the number of words in an epub file
 #
 ### USAGE ##################################################################### 
-# ewc [-flag] [--flag] [file]
+# ewc [-flag | --flag] [file]
 #
 ### EXIT CODES ################################################################
 # 0 - success
@@ -46,24 +47,27 @@ get_version() {
 
 help_message() {
 	echo "Purpose:  determines the number of words in an epub file"
-	echo "Usage:  ewc [-bfhtvV] [file]"
+	echo "Usage:  ewc [-b | -d | -f | -h | -t | -v | -V] [file]"
+	echo "   or:  ewc [--batch | --debug | --file | --help | --tty | --version | --Verbose] [file]"
 	echo "  -b, --batch  ** Enable batch mode (allow multiple files)"
+	echo "  -d, --debug  ** Enable debug mode (show extra debug info)"
 	echo "  -f, --file  ** Read file names from a text file (one file per line)"
 	echo "  -h, --help  Show this help message and exit"
 	echo "  -t, --tty  Disable TTY check (allow piping)"
 	echo "  -v, --version  Show version information and exit"
 	echo "  -V, --verbose  Enable verbose output (show extra processing details)"
+	echo "                  - Warning: <verbose> may produce excessive output"
 	echo "  (** denotes unsupported/future flags)"
 	exit $EXIT_CODE
 }
 
 verbose_output() {
-  [[ $ewc_flag_V == true ]] 
+  [[ $ewc_flag_V == true ]] && echo "verbose: $1"
 }
 
 enable_tty_check() {
   if [[ $ewc_flag_t == true ]]; then
-	verbose_output && echo "+TTY enabled."
+	verbose_output && echo "verbose: TTY enabled."
   else
 	echo "Error: TTY disabled." >&2
 	EXIT_CODE=2
@@ -83,40 +87,44 @@ batch_mode() {
 
 	### HELPER FUNCTIONS ###
 check_file() {
-	local FILE=""
 	# determine if the argument is a valid file and of the correct type (epub)
-	for arg in "$@"; do  
-		if [[ -f "$arg" && "$(file --mime-type "$arg")" == *"epub"* ]]; then
-			verbose_output && echo "File $arg is valid."
-			FILE="$arg"
-		else
-			echo "Error: File $arg not found or invalid file type." >&2
-			EXIT_CODE=3
-			exit $EXIT_CODE
-		fi
-
-		# parse FILE
-		parsed_file=$(parse_xml "$FILE")
-		count_words "$parsed_file"
-	done
+	#working_file=$(basename "$1")
+	if [[ -f "$1" ]] && [[ "$(file --mime-type "$1")" == *"epub"* ]]; then
+		echo 0
+	else
+		echo 3
+	fi
 }
 
 parse_xml() {
-	# TODO parse the .xhtml files to extract text content for word counting
-	echo $1
+	# TODO for each .xhtml file, parse out the text content and count the words
+	result=$(wc -w /tmp/ewc_temp/* | tail -n 1 | awk '{printf" %d", $1}')
+	echo $result
 }
 
 count_words() {
-	mkdir ~/.temp
+	local unzipped=()
+	local words_sum=0
+	local word_count=0
 
 	# quietly unzip only the .xhtml files to a temp directory
-	unzip -jq "$1" "*.xhtml" -d ~/.temp
+	unzip -jq "$1" "*.xhtml" -d /tmp/ewc_temp
+	verbose_output "Unzipping $1 to /tmp/ewc_temp/*"
+	
+	for file in /tmp/ewc_temp/*; do
+		verbose_output "Unzipped file: $file"
+		unzipped+=("$file")
+	done
 
-	# TODO for each .xhtml file, parse out the text content and count the words
-	wc -w ~/.temp/* | tail -n 1 | awk '{print "Approximate word count: " $1}'
-
+	for file in "${unzipped[@]}"; do
+		word_count=0
+		word_count=$(parse_xml $file)
+		verbose_output "Processing file: $file with $word_count words"
+		words_sum=$(( words_sum + word_count ))
+	done
+	echo "Total word count: $words_sum"
 	# cleanup 
-	rm -rf ~/.temp
+	rm -rf /tmp/ewc_temp
 }
 
 
@@ -128,6 +136,7 @@ main() {
 
 	local POSITIONAL_ARGS=()  	# array to hold non-flag arguments (file names)
 	local SET_FLAGS=()			# array to hold the names of flags that are set
+	local FILE=""
 
 	[[ $# == 0 ]] && ewc_flag_h=true  # catch no arguments and show help message
 
@@ -135,6 +144,9 @@ main() {
 		case $arg in 
 			-b|--batch) 
 				ewc_flag_b=true 
+				;;
+			-d|--debug)
+				ewc_flag_d=true
 				;;
 			-f|--file) 
 				ewc_flag_f=true 
@@ -162,17 +174,19 @@ main() {
 		esac
 	done
 
+	# TODO make this a function conditional on verbose_mode
 	for opt in $(echo ${!ewc_flag_*}); do
 		local -n arr_ref=$opt
     	truthy=${arr_ref[0]}
     	namer=${arr_ref[1]}
 		[[ ${truthy} == true ]] && SET_FLAGS+=(${namer})
 	done
-
-	verbose_output && echo "Flags set: ${SET_FLAGS[@]}"
-	verbose_output && echo "Positional arguments: ${POSITIONAL_ARGS[@]}"
+	verbose_output "Flags set: ${SET_FLAGS[@]}"
 	
+	verbose_output "Positional arguments: ${POSITIONAL_ARGS[@]}"
+
 	[[ $ewc_flag_b == true ]] && batch_mode
+	[[ $ewc_flag_d == true ]] && set -x
 	[[ $ewc_flag_f == true ]] && file_mode
 	[[ $ewc_flag_h == true ]] && help_message 
 	[[ $ewc_flag_v == true ]] && get_version
@@ -180,10 +194,21 @@ main() {
 	
 
 	### MAIN LOGIC ###
-	check_file ${POSITIONAL_ARGS[@]}
-	# FILE_NAME=$(basename "$FILE") 
-	# Welcome message
-	# count_words "$FILE"
+	for book in "${POSITIONAL_ARGS[@]}"; do
+		verbose_output "Processing file: $book"
+		book_file_path=$(realpath "$book")
+		verbose_output "Resolved path: $book_file_path"
+		result=$(check_file "$book_file_path")
+		verbose_output "File $book_file_path is valid."
+		if [[ $result == 0 ]]; then
+			FILE="$book_file_path"
+			count_words "$FILE"
+		else
+			echo "Error: File $book_file_path not found or invalid file type." >&2
+			exit $EXIT_CODE
+		fi
+	done
+	
 	exit $EXIT_CODE
 }
 
