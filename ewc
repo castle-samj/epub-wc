@@ -47,22 +47,33 @@ get_version() {
 
 help_message() {
 	echo "Purpose:  determines the number of words in an epub file"
-	echo "Usage:  ewc [-b | -d | -f | -h | -t | -v | -V] [file]"
-	echo "   or:  ewc [--batch | --debug | --file | --help | --tty | --version | --Verbose] [file]"
-	echo "  -b, --batch  ** Enable batch mode (allow multiple files)"
-	echo "  -d, --debug  ** Enable debug mode (show extra debug info)"
-	echo "  -f, --file  ** Read file names from a text file (one file per line)"
+	echo "Usage:  ewc [-b, --batch | -d, --debug | -f, --file | -h, --help\n
+		   | -t, --tty | -v, --version | -V, --verbose] [file]"
+	echo "  -b, --batch  Enable batch mode (allow multiple files)"
+	# TODO debug mode exports to log file by default
+	echo "  -d, --debug  Enable debug mode (exhaustive information, see 'set -x')"
+	# TODO add -x flag (for XTRACE) which logs debug to console instead of file
+	echo "  -f, --file  Read file names from a text file (one file per line)"
 	echo "  -h, --help  Show this help message and exit"
 	echo "  -t, --tty  Disable TTY check (allow piping)"
 	echo "  -v, --version  Show version information and exit"
-	echo "  -V, --verbose  Enable verbose output (show extra processing details)"
-	echo "                  - Warning: <verbose> may produce excessive output"
-	echo "  (** denotes unsupported/future flags)"
+	echo "  -V, --verbose  Enable verbose output (excessive information)"
 	exit $EXIT_CODE
 }
 
 verbose_output() {
-  [[ $ewc_flag_V == true ]] && echo "verbose: $1"
+  [[ $ewc_flag_V == true ]] && echo "verbose: $@"
+}
+
+enumerate_flags() {
+	local SET_FLAGS=()	# array to hold the names of flags that are set
+	for opt in $(echo ${!ewc_flag_*}); do
+		local -n arr_ref=$opt
+    	local truthy=${arr_ref[0]}
+    	local namer=${arr_ref[1]}
+		[[ ${truthy} == true ]] && SET_FLAGS+=(${namer})
+	done
+	verbose_output "Flags set: ${SET_FLAGS[@]}"
 }
 
 enable_tty_check() {
@@ -135,7 +146,6 @@ main() {
 	### ARGS AND FLAGS ###
 
 	local POSITIONAL_ARGS=()  	# array to hold non-flag arguments (file names)
-	local SET_FLAGS=()			# array to hold the names of flags that are set
 	local FILE=""
 
 	[[ $# == 0 ]] && ewc_flag_h=true  # catch no arguments and show help message
@@ -174,14 +184,7 @@ main() {
 		esac
 	done
 
-	# TODO make this a function conditional on verbose_mode
-	for opt in $(echo ${!ewc_flag_*}); do
-		local -n arr_ref=$opt
-    	truthy=${arr_ref[0]}
-    	namer=${arr_ref[1]}
-		[[ ${truthy} == true ]] && SET_FLAGS+=(${namer})
-	done
-	verbose_output "Flags set: ${SET_FLAGS[@]}"
+	[[ $ewc_flag_V == true ]] && enumerate_flags
 	
 	verbose_output "Positional arguments: ${POSITIONAL_ARGS[@]}"
 
