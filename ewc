@@ -108,14 +108,15 @@ check_file() {
 
 parse_xml() {
 	# TODO for each .xhtml file, parse out the text content and count the words
-	result=$(wc -w /tmp/ewc_temp/* | tail -n 1 | awk '{printf" %d", $1}')
-	echo $result
+	result=$(wc -w "$1" | tail -n 1 | awk '{printf" %d", $1}')
+	echo "$result"
 }
 
-count_words() {
+get_word_counts() {
+	local iterator=0
 	local unzipped=()
 	local words_sum=0
-	local word_count=0
+	local word_count=()
 
 	# quietly unzip only the .xhtml files to a temp directory
 	unzip -jq "$1" "*.xhtml" -d /tmp/ewc_temp
@@ -127,10 +128,10 @@ count_words() {
 	done
 
 	for file in "${unzipped[@]}"; do
-		word_count=0
-		word_count=$(parse_xml $file)
-		verbose_output "Processing file: $file with $word_count words"
-		words_sum=$(( words_sum + word_count ))
+		word_count[iterator]=$(parse_xml "$file")
+		verbose_output "Processing file: $file with ${word_count[iterator]} words"
+		words_sum=$(( words_sum + word_count[iterator] ))
+		iterator=$(( iterator + 1 ))
 	done
 	echo "Total word count: $words_sum"
 	# cleanup 
@@ -207,7 +208,7 @@ main() {
 		verbose_output "File $book_file_path is valid."
 		if [[ $result == 0 ]]; then
 			FILE="$book_file_path"
-			count_words "$FILE"
+			get_word_counts "$FILE"
 		else
 			echo "Error: File $book_file_path not found or invalid file type." >&2
 			exit $EXIT_CODE
