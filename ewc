@@ -46,9 +46,8 @@ get_version() {
 }
 
 help_message() {
-	echo "Purpose:  determines the number of words in an epub file"
-	echo "Usage:  ewc [-b, --batch | -d, --debug | -f, --file | -h, --help\n
-		   | -t, --tty | -v, --version | -V, --verbose] [file]"
+	printf "Purpose:  determines the number of words in an epub file.\n"
+	printf "Usage:  ewc [<flags>] [file]\n"
 	echo "  -b, --batch  Enable batch mode (allow multiple files)"
 	# TODO debug mode exports to log file by default
 	echo "  -d, --debug  Enable debug mode (exhaustive information, see 'set -x')"
@@ -62,7 +61,7 @@ help_message() {
 }
 
 verbose_output() {
-  [[ $ewc_flag_V == true ]] && echo "verbose: $@"
+  [[ ${ewc_flag_V[0]} == true ]] && echo "verbose: $*"
 }
 
 enumerate_flags() {
@@ -71,7 +70,7 @@ enumerate_flags() {
 		local -n arr_ref=$opt
     	local truthy=${arr_ref[0]}
     	local namer=${arr_ref[1]}
-		[[ ${truthy} == true ]] && SET_FLAGS+=(${namer})
+		[[ ${truthy} == true ]] && SET_FLAGS+=("${namer}")
 	done
 	verbose_output "Flags set: ${SET_FLAGS[@]}"
 }
@@ -150,7 +149,7 @@ main() {
 
 	[[ $# == 0 ]] && ewc_flag_h=true  # catch no arguments and show help message
 
-	for arg in $@; do
+	for arg in "$@"; do
 		case $arg in 
 			-b|--batch) 
 				ewc_flag_b=true 
@@ -178,7 +177,7 @@ main() {
 				EXIT_CODE=1 
 				exit $EXIT_CODE 
 				;;
-			*) 
+			*)  # TODO find the correct way to get files with spaces working
 				POSITIONAL_ARGS+=("$arg") 
 				;;
 		esac
@@ -186,7 +185,10 @@ main() {
 
 	[[ $ewc_flag_V == true ]] && enumerate_flags
 	
-	verbose_output "Positional arguments: ${POSITIONAL_ARGS[@]}"
+	#verbose_output "Positional arguments: ${POSITIONAL_ARGS[@]}"
+	for arg in "${POSITIONAL_ARGS[@]}"; do
+		verbose_output "Positional argument: $arg"
+	done
 
 	[[ $ewc_flag_b == true ]] && batch_mode
 	[[ $ewc_flag_d == true ]] && set -x
