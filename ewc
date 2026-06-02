@@ -76,7 +76,7 @@ enumerate_flags() {
 }
 
 enable_tty_check() {
-  if [[ $ewc_flag_t == true ]]; then
+  if [[ ${ewc_flag_t[0]} == true ]]; then
 	verbose_output && echo "verbose: TTY enabled."
   else
 	echo "Error: TTY disabled." >&2
@@ -147,30 +147,30 @@ main() {
 	local POSITIONAL_ARGS=()  	# array to hold non-flag arguments (file names)
 	local FILE=""
 
-	[[ $# == 0 ]] && ewc_flag_h=true  # catch no arguments and show help message
+	[[ $# == 0 ]] && ewc_flag_h[0]=true  # catch no arguments and show help message
 
 	for arg in "$@"; do
 		case $arg in 
 			-b|--batch) 
-				ewc_flag_b=true 
+				ewc_flag_b[0]=true 
 				;;
 			-d|--debug)
-				ewc_flag_d=true
+				ewc_flag_d[0]=true
 				;;
 			-f|--file) 
-				ewc_flag_f=true 
+				ewc_flag_f[0]=true 
 				;;
 			-h|--help) 
-				ewc_flag_h=true 
+				ewc_flag_h[0]=true 
 				;;
 			-t|--tty) 
-				ewc_flag_t=true 
+				ewc_flag_t[0]=true 
 				;;
 			-v|--version) 
-				ewc_flag_v=true 
+				ewc_flag_v[0]=true 
 				;;
 			-V|--Verbose) 
-				ewc_flag_V=true 
+				ewc_flag_V[0]=true 
 				;;
 			-*) 
 				echo "Error: Invalid flag $arg" >&2 
@@ -183,18 +183,18 @@ main() {
 		esac
 	done
 
-	[[ $ewc_flag_V == true ]] && enumerate_flags
+	[[ ${ewc_flag_V[0]} == true ]] && enumerate_flags
 	
 	#verbose_output "Positional arguments: ${POSITIONAL_ARGS[@]}"
 	for arg in "${POSITIONAL_ARGS[@]}"; do
 		verbose_output "Positional argument: $arg"
 	done
 
-	[[ $ewc_flag_b == true ]] && batch_mode
-	[[ $ewc_flag_d == true ]] && set -x
-	[[ $ewc_flag_f == true ]] && file_mode
-	[[ $ewc_flag_h == true ]] && help_message 
-	[[ $ewc_flag_v == true ]] && get_version
+	[[ ${ewc_flag_b[0]} == true ]] && batch_mode
+	[[ ${ewc_flag_d[0]} == true ]] && set -x
+	[[ ${ewc_flag_f[0]} == true ]] && file_mode
+	[[ ${ewc_flag_h[0]} == true ]] && help_message 
+	[[ ${ewc_flag_v[0]} == true ]] && get_version
 	[[ ! -t 1 ]] && enable_tty_check	
 	
 
