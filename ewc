@@ -177,7 +177,7 @@ main() {
 				EXIT_CODE=1 
 				exit $EXIT_CODE 
 				;;
-			*)  # TODO find the correct way to get files with spaces working
+			*)
 				POSITIONAL_ARGS+=("$arg") 
 				;;
 		esac
@@ -217,4 +217,4 @@ main() {
 	exit $EXIT_CODE
 }
 
-main $@
+main "$@"
