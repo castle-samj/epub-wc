@@ -66,13 +66,13 @@ verbose_output() {
 
 enumerate_flags() {
 	local SET_FLAGS=()	# array to hold the names of flags that are set
-	for opt in $(echo ${!ewc_flag_*}); do
+	for opt in ${!ewc_flag_*}; do
 		local -n arr_ref=$opt
     	local truthy=${arr_ref[0]}
     	local namer=${arr_ref[1]}
 		[[ ${truthy} == true ]] && SET_FLAGS+=("${namer}")
 	done
-	verbose_output "Flags set: ${SET_FLAGS[@]}"
+	verbose_output "Flags set: ${SET_FLAGS[*]}"
 }
 
 enable_tty_check() {
