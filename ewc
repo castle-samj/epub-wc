@@ -24,7 +24,6 @@ ewc_flag_h=(false "help")		# flag - help
 ewc_flag_t=(false "tty")		# flag - TTY check
 ewc_flag_v=(false "version")	# flag - version
 ewc_flag_V=(false "Verbose")	# flag - verbose mode
-parsed_file=""
 #
 ### PURPOSE ###################################################################
 # determines the number of words in an epub file
